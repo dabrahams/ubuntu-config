@@ -7,17 +7,20 @@
 
 set -e
 
+# Bring in my getXauthority function
 . /usr/local/share/acpi-support/power-funcs
-
-set -x
 
 # On each active X display, disable capslock
 for x in /tmp/.X11-unix/*; do
-    displaynum=`echo $x | sed s#/tmp/.X11-unix/X##`
-    export DISPLAY=:$displaynum
+    export DISPLAY=:`echo $x | sed s#/tmp/.X11-unix/X##`
     getXauthority $DISPLAY 
-    export XAUTHORITY
-    # xmodmap -e "clear lock" -e "add lock = Caps_Lock"
-    xmodmap -e "clear Lock"
-    xmodmap -e "add Control = Caps_Lock"
+
+    # Doing a direct xmodmap here either doesn't work at all, or
+    # occasionally we'll get caps lock acting as control but the
+    # external keyboard's capslock LED will still toggle.  Clearly
+    # something is leaping in and undoing the good work we have done.
+    #
+    # Instead, fork a process using screen, wait a bit (yes, that
+    # delay is needed) and then fix things.  This oughta be easier :(
+    screen -d -m sh -c 'sleep 0.1 && xmodmap -e "remove Lock = Caps_Lock" -e "add Control = Caps_Lock"'
 done
