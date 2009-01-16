@@ -1,0 +1,1 @@
+SUBSYSTEM=="input", ACTION=="add", ENV{ID_CLASS}=="kbd", RUN+="/usr/local/sbin/capslock"

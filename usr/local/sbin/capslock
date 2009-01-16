@@ -1,0 +1,23 @@
+#!/bin/sh
+#
+# /usr/local/sbin/capslock
+#
+# This script is invoked by
+# /etc/udev/rules.d/85-capslock-disable.rules
+
+set -e
+
+. /usr/local/share/acpi-support/power-funcs
+
+set -x
+
+# On each active X display, disable capslock
+for x in /tmp/.X11-unix/*; do
+    displaynum=`echo $x | sed s#/tmp/.X11-unix/X##`
+    export DISPLAY=:$displaynum
+    getXauthority $DISPLAY 
+    export XAUTHORITY
+    # xmodmap -e "clear lock" -e "add lock = Caps_Lock"
+    xmodmap -e "clear Lock"
+    xmodmap -e "add Control = Caps_Lock"
+done

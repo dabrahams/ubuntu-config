@@ -1,0 +1,25 @@
+# -*-Shell-Script-*-
+
+# getXauthority display -- where display is a potential value of
+# $DISPLAY, sets up an exported $XAUTHORITY.
+getXauthority()
+{
+    # Strip the host and screen parts off of the argument
+    local server pid
+    server=`echo $1 | sed -re 's/[^:]*:([0-9]+)([.][0-9]+)?/\1/'`
+    pid=`ps ax | grep -m1 -E -e "\<X.* :${server}\>" | sed -re 's/[^0-9]*([0-9]+).*/\1/'`
+    export XAUTHORITY=$(grep -zx "XAUTHORITY=.*" /proc/$pid/environ | sed -r -e 's/XAUTHORITY=(.*)/\1/')
+}
+
+# based on /usr/share/acpi-support/power-funcs, which is inadequate
+# because sometimes root takes ownership of the user's .Xauthority
+# file, and then gdm puts the file elsewhere (e.g. /tmp/.gdm2398).
+myXconsole()
+{
+    local console displaynum
+    console=`fgconsole`
+    displaynum=`ps ax | grep -m1 -e '[X] .* vt'$console | sed -re 's!.*/X .*:([0-9]+).*!\1!'`
+    export DISPLAY=:$displaynum
+    getXauthority $DISPLAY
+}
+
