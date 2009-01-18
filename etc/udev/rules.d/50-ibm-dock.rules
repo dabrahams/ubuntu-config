@@ -1,0 +1,2 @@
+ENV{EVENT}=="undock", KERNEL=="dock.0", SUBSYSTEM=="platform", RUN+="/usr/local/sbin/dock-eject"
+ENV{EVENT}=="dock", KERNEL=="dock.0", SUBSYSTEM=="platform", RUN+="/usr/local/sbin/dock-insert"

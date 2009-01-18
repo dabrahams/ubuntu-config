@@ -1,0 +1,82 @@
+#!/bin/bash
+#
+# /usr/local/sbin/docking
+#
+# This script is invoked as dock-eject or dock-insert by
+# /etc/udev/rules.d/50-ibm-dock.rules
+ACTION=$(basename "$0")
+ACTION=${ACTION#dock-}
+
+. /usr/local/share/acpi-support/fglrx-funcs
+. /usr/local/share/acpi-support/power-funcs
+        
+BLUETOOTH=/proc/acpi/ibm/bluetooth
+
+# Actions taken when docking
+docking()
+{
+    echo enabled > "$BLUETOOTH"
+        
+    for x in /tmp/.X11-unix/*; do
+        displaynum=`echo $x | sed s#/tmp/.X11-unix/X##`
+        export DISPLAY=:$displaynum
+        getXauthority $DISPLAY
+        export XAUTHORITY
+
+        # If I switch displays with -s 0, it crashes X
+        xrandr -s 1
+    
+        # see if any external monitors are connected
+        sleep 1.5
+        local externals=`fglrx-external-monitors`
+        if [ -n "$externals" ]; then
+            fglrx-enable-monitor "$externals"
+        fi
+    done
+}
+
+# Actions taken when docking
+undocking()
+{
+    echo disabled > "$BLUETOOTH"
+        
+    for x in /tmp/.X11-unix/*; do
+        displaynum=`echo $x | sed s#/tmp/.X11-unix/X##`
+        myXconsole; 
+        export DISPLAY
+        export XAUTHORITY
+        
+        fglrx-enable-monitor lvds
+    done
+
+    # Get current dock status
+    if [ `/bin/cat /sys/devices/platform/dock.0/docked` -eq 1 ]; then
+        echo 1 > /sys/devices/platform/dock.0/undock || logger "$0: undock command ignored."
+    else
+        logger "$0: already undocked; no need to issue command to /sys/devices"
+    fi
+}
+
+
+# Give the kernel a chance to settle down
+# sleep 2
+    
+logger "$0: DOCK $ACTION"
+    
+case "$ACTION" in
+   eject)
+        logger "$0: Undocking"
+        # if [ $STATUS -eq 1 ]; then
+            undocking
+        # fi
+        ;;
+   insert)
+        logger "$0: Docking"
+        # if [ $STATUS -eq 0 ]; then
+            docking
+        # fi
+        ;;
+   *)
+        logger "$0: Error accessing dock status"
+        ;;
+esac

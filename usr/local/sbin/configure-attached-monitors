@@ -1,0 +1,22 @@
+#!/bin/bash
+#
+# /usr/local/sbin/enable-external-monitors
+#
+# I tried to find a way to configure X so this script would run for
+# all users, but everything I've tried causes the xrandr calls to have
+# no effect, so every user must now invoke this from his gdm session
+# startup (or whatever).
+
+. /usr/local/share/acpi-support/fglrx-funcs
+. /usr/local/share/acpi-support/power-funcs
+
+if [ x"$XAUTHORITY" == x ] || [ x"$DISPLAY" == x ]; then
+    myXconsole
+fi
+    
+externals=`fglrx-external-monitors`
+if [ x"$externals" != x ]; then
+    fglrx-enable-monitor "$externals"
+else
+    fglrx-enable-monitor "lvds"
+fi
